@@ -28,7 +28,7 @@ module.exports = {
               },
               imageUrl: {
                 type: DataTypes.STRING,
-                allowNull: false,
+                //  
               },
               stock: {
                 type: DataTypes.INTEGER,

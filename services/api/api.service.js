@@ -17,14 +17,19 @@ module.exports = {
 					bodyParser.urlencoded({ extended: true }),
 				],
 				aliases: {
+					//Users API
 					"POST api/register": "user.register",
 					"POST api/login": "user.login",
-					"GET api/users": "user.getAllUsers",
 					"GET api/user": {
 						action: "user.getUserByToken",
 						onBeforeCall: [authenticateToken.localAction],
 					},
 					"POST api/logout": "user.logout",
+					
+					// Products API
+					"GET api/products":"product.getAllProducts", 
+					"GET api/products/:id":"product.getProductById" 
+
 				},
 				mappingPolicy: "all",
 				bodyParsers: {
@@ -43,6 +48,6 @@ module.exports = {
 	methods: {},
 
 	started() {
-		this.logger.info("User API service started");
+		this.logger.info(" API service started");
 	},
 };
