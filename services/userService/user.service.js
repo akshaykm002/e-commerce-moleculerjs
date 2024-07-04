@@ -36,10 +36,11 @@ module.exports = {
 				username: { type: "string", min: 3 },
 				email: { type: "email" },
 				password: { type: "string", min: 6 },
+				userType: { type: "string", optional: true }
 			},
 			async handler(ctx) {
 				try {
-					const { username, email, password } = ctx.params;
+					const { username, email, password, userType} = ctx.params;
 
 					// Check if the email already exists
 					const existingEmail = await ctx.call("users.find", {
@@ -64,16 +65,18 @@ module.exports = {
 					const hashedPassword = await bcrypt.hash(password, 10);
 
 					// Create the new user
+					const userRole = userType || 'user';
 					await ctx.call("users.create", {
 						username,
 						email,
 						password: hashedPassword,
+						userType:userRole
 					});
 
 					// Fetch user data without password
 					const userDataWithoutPassword = await ctx.call(
 						"users.find",
-						{ query: { email }, fields: ["username", "email"] }
+						{ query: { email }, fields: ["username", "email" ,"userType"] }
 					);
 
 					return {
@@ -126,7 +129,7 @@ module.exports = {
 
 					// Generate a JWT token using the user's email as the payload
 					const token = jwt.sign(
-						{ userId: validUser.email },
+						{ userId: validUser.email ,userRole: validUser.userType},
 						this.settings.JWT_SECRET
 					);
 

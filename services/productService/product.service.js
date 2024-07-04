@@ -54,6 +54,7 @@ module.exports = {
 				}
 			},
 		},
+		
 	},
 	started() {
 		console.log("Product service started");

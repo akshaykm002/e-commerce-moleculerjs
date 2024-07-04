@@ -28,8 +28,8 @@ module.exports = {
 					
 					// Products API
 					"GET api/products":"product.getAllProducts", 
-					"GET api/products/:id":"product.getProductById" 
-
+					"GET api/products/:id":"product.getProductById",
+					
 				},
 				mappingPolicy: "all",
 				bodyParsers: {
@@ -48,6 +48,6 @@ module.exports = {
 	methods: {},
 
 	started() {
-		this.logger.info(" API service started");
+		this.logger.info("API service started");
 	},
 };
