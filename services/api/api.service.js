@@ -32,7 +32,12 @@ module.exports = {
 					"POST api/products": {
 						action: "product.createNewProducts",
 						onBeforeCall: [authenticateToken.localAction],
-					}
+					},
+					"PUT api/products/:id":{
+						action: "product.updateProductById",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					
 				},
 				mappingPolicy: "all",
 				bodyParsers: {

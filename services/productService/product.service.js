@@ -10,8 +10,6 @@ module.exports = {
 
 	settings: {
 		JWT_SECRET: process.env.ACCESS_TOKEN_SECRET,
-
-
 	},
 	hooks: {
 		before: {
@@ -32,7 +30,7 @@ module.exports = {
 
 	actions: {
 		getAllProducts: {
-			 async handler(ctx) {
+			async handler(ctx) {
 				try {
 					const products = await ctx.call("products.find", {});
 					return { message: "List of all products", products };
@@ -64,7 +62,6 @@ module.exports = {
 						);
 					}
 					return product;
-
 				} catch (error) {
 					throw new MoleculerError(
 						`Unable to fetch product with this id `,
@@ -77,57 +74,154 @@ module.exports = {
 		},
 		createNewProducts: {
 			params: {
-			  name: { type: "string", optional: false },
-			  description: { type: "string", optional: false },
-			  price: { type: "number", convert: true },
-		 	  stock: { type: "number", convert: true }
+				name: { type: "string", optional: false },
+				description: { type: "string", optional: false },
+				price: { type: "number", convert: true },
+				stock: { type: "number", convert: true },
 			},
 			async handler(ctx) {
-			  try {
-				// console.log("Recieved params",ctx.params);
-				
-	  
-				if (!ctx.meta.token) {
-				  throw new MoleculerError("No token provided", 401, "NO_TOKEN");
-				}
-	  
-				const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
-				console.log("Decoded Token:", decoded);
+				try {
+					// console.log("Recieved params",ctx.params);
 
-				//destructured userRole from decoded token
-				const { userRole } = decoded;
-				console.log("User role:", userRole);
-	  
-				if (userRole !== 'admin') {
-				  throw new MoleculerError('Unauthorized', 401, 'UNAUTHORIZED');
-				}
-				// console.log("upload ",upload);
+					if (!ctx.meta.token) {
+						throw new MoleculerError(
+							"No token provided",
+							401,
+							"NO_TOKEN"
+						);
+					}
 
-				await new Promise((resolve, reject) => {
-					upload.single('image')(ctx.meta.$req, ctx.meta.$res, (err) => {
-					  if (err) return reject(err);
-					  resolve();
+					const decoded = jwt.verify(
+						ctx.meta.token,
+						this.settings.JWT_SECRET
+					);
+					console.log("Decoded Token:", decoded);
+
+					//destructured userRole from decoded token
+					const { userRole } = decoded;
+					console.log("User role:", userRole);
+
+					if (userRole !== "admin") {
+						throw new MoleculerError(
+							"Unauthorized",
+							401,
+							"UNAUTHORIZED"
+						);
+					}
+					// console.log("upload ",upload);
+
+					await new Promise((resolve, reject) => {
+						upload.single("image")(
+							ctx.meta.$req,
+							ctx.meta.$res,
+							(err) => {
+								if (err) return reject(err);
+								resolve();
+							}
+						);
 					});
-				  });
-	  
-				const { name, description, price, stock } = ctx.params;
 
-				const imageUrl = ctx.meta.$req.file.path;
+					const { name, description, price, stock } = ctx.params;
 
-	  
-				const product = await ctx.call('products.create', { name, description, price, imageUrl, stock });
-				return product;
-			  } catch (error) {
-				console.error("Error during product creation:", error);
-				throw new MoleculerError('Unable to create product', 500, 'CREATE_ERROR', { error });
-			  }
-			}
-		  },
-		
+					const imageUrl = ctx.meta.$req.file.path;
 
+					const product = await ctx.call("products.create", {
+						name,
+						description,
+						price,
+						imageUrl,
+						stock,
+					});
+					return product;
+					
+				} catch (error) {
+					console.error("Error during product creation:", error);
+					throw new MoleculerError(
+						"Unable to create product",
+						500,
+						"CREATE_ERROR",
+						{ error }
+					);
+				}
+			},
+		},
+		updateProductById: {
+			params: {
+				id: { type: "number", convert: true },
+				name: { type: "string", optional: true },
+				description: { type: "string", optional: true },
+				price: { type: "number", optional: true ,convert: true  },
+				stock: { type: "number", optional: true ,convert: true  },
+				imageUrl: { type: "string", optional: true },
+			},
+			async handler(ctx) {
+				try {
+					if (!ctx.meta.token) {
+						throw new MoleculerError(
+							"No token provided",
+							401,
+							"NO_TOKEN"
+						);
+					}
 
-	  
-		
+					const decoded = jwt.verify(
+						ctx.meta.token,
+						this.settings.JWT_SECRET
+					);
+					const { userRole } = decoded;
+
+					if (userRole !== "admin") {
+						throw new MoleculerError(
+							"Unauthorized",
+							401,
+							"UNAUTHORIZED"
+						);
+					}
+
+					await new Promise((resolve, reject) => {
+						upload.single("image")(
+							ctx.meta.$req,
+							ctx.meta.$res,
+							(err) => {
+								if (err) return reject(err);
+								resolve();
+							}
+						);
+					});
+
+					const updateData = {};
+					["name", "description", "price", "stock"].forEach((key) => {
+						if (ctx.params[key] !== undefined) {
+							updateData[key] = ctx.params[key];
+						}
+					});
+
+					if (ctx.meta.$req.file) {
+						updateData.imageUrl = ctx.meta.$req.file.path;
+					}
+
+					const updatedProduct = await ctx.call("products.update", {
+						id: ctx.params.id,
+						...updateData,
+					});
+					if (!updatedProduct) {
+						throw new MoleculerError(
+							"Product not found",
+							404,
+							"NOT_FOUND"
+						);
+					}
+					return updatedProduct;
+				} catch (error) {
+					throw new MoleculerError(
+						"Unable to update product",
+						500,
+						"UPDATE_ERROR",
+						{ error }
+					);
+				}
+			},
+		},
 	},
 	started() {
 		console.log("Product service started");
