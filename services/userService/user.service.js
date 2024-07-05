@@ -176,7 +176,7 @@ module.exports = {
 					// Assuming userId is email, change query accordingly if it differs
 					const users = await ctx.call("users.find", {
 						query: { email: decodedToken.userId },
-						fields: ["id", "username", "email"],
+						fields: ["id", "username", "email","userType"],
 					});
 
 					if (users.length === 0) {

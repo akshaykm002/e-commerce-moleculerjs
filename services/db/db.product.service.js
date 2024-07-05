@@ -12,7 +12,9 @@ module.exports = {
 		define: {
             id:{
                 type:DataTypes.INTEGER,
-                primaryKey:true
+                primaryKey:true,
+                autoIncrement: true
+
             },
             name:{
                 type:DataTypes.STRING,
@@ -28,7 +30,7 @@ module.exports = {
               },
               imageUrl: {
                 type: DataTypes.STRING,
-                //  
+                allowNull: false,
               },
               stock: {
                 type: DataTypes.INTEGER,

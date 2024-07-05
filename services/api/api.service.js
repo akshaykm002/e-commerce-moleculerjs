@@ -17,7 +17,7 @@ module.exports = {
 					bodyParser.urlencoded({ extended: true }),
 				],
 				aliases: {
-					//Users API
+					// Users API
 					"POST api/register": "user.register",
 					"POST api/login": "user.login",
 					"GET api/user": {
@@ -25,11 +25,14 @@ module.exports = {
 						onBeforeCall: [authenticateToken.localAction],
 					},
 					"POST api/logout": "user.logout",
-					
+
 					// Products API
-					"GET api/products":"product.getAllProducts", 
-					"GET api/products/:id":"product.getProductById",
-					
+					"GET api/products": "product.getAllProducts",
+					"GET api/products/:id": "product.getProductById",
+					"POST api/products": {
+						action: "product.createNewProducts",
+						onBeforeCall: [authenticateToken.localAction],
+					}
 				},
 				mappingPolicy: "all",
 				bodyParsers: {
@@ -39,6 +42,8 @@ module.exports = {
 				onBeforeCall(ctx, route, req) {
 					ctx.meta.headers = req.headers;
 					ctx.meta.tenantId = req.headers["tenant-id"];
+					ctx.meta.$req = req; 
+					ctx.meta.$res = req.res; 
 				},
 			},
 		],
