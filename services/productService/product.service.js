@@ -1,4 +1,5 @@
 const DbService = require("moleculer-db");
+const path = require('path');
 const { MoleculerError } = require("moleculer").Errors;
 const jwt = require("jsonwebtoken");
 const upload = require("../../middlewares/multer-config.js");
@@ -46,11 +47,11 @@ module.exports = {
 		},
 		getProductById: {
 			params: {
-				id: { type: "number", convert: true },
+				id: { type: "string", },
 			},
 			async handler(ctx) {
 				try {
-					const productId = Number(ctx.params.id);
+					const productId = ctx.params.id;
 					const product = await ctx.call("products.get", {
 						id: productId,
 					});
@@ -123,7 +124,8 @@ module.exports = {
 
 					const { name, description, price, stock } = ctx.params;
 
-					const imageUrl = ctx.meta.$req.file.path;
+					let imageUrl = ctx.meta.$req.file.path;
+					imageUrl = imageUrl.split(path.sep).join("/");     
 
 					const product = await ctx.call("products.create", {
 						name,
@@ -133,7 +135,7 @@ module.exports = {
 						stock,
 					});
 					return product;
-					
+
 				} catch (error) {
 					console.error("Error during product creation:", error);
 					throw new MoleculerError(
@@ -147,7 +149,7 @@ module.exports = {
 		},
 		updateProductById: {
 			params: {
-				id: { type: "number", convert: true },
+				id: { type: "string"},
 				name: { type: "string", optional: true },
 				description: { type: "string", optional: true },
 				price: { type: "number", optional: true ,convert: true  },
@@ -197,8 +199,10 @@ module.exports = {
 					});
 
 					if (ctx.meta.$req.file) {
-						updateData.imageUrl = ctx.meta.$req.file.path;
-					}
+                        let imageUrl = ctx.meta.$req.file.path;
+                        imageUrl = imageUrl.split(path.sep).join("/");
+                        updateData.imageUrl = imageUrl;
+                    }
 
 					const updatedProduct = await ctx.call("products.update", {
 						id: ctx.params.id,
@@ -219,6 +223,33 @@ module.exports = {
 						"UPDATE_ERROR",
 						{ error }
 					);
+				}
+			},
+		},
+		deleteProductById: {
+			params: {
+				id: { type: "string"},
+			},
+			async handler(ctx) {
+				try {
+					if (!ctx.meta.token) {
+						throw new MoleculerError("No token provided", 401, "NO_TOKEN");
+					}
+
+					const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
+					const { userRole } = decoded;
+
+					if (userRole !== "admin") {
+						throw new MoleculerError("Unauthorized", 401, "UNAUTHORIZED");
+					}
+
+					const deletedProduct = await ctx.call("products.remove", { id: ctx.params.id });
+					if (!deletedProduct) {
+						throw new MoleculerError("Product not found", 404, "NOT_FOUND");
+					}
+					return { message: "Product deleted successfully" };
+				} catch (error) {
+					throw new MoleculerError("Unable to delete product", 500, "DELETE_ERROR", { error });
 				}
 			},
 		},

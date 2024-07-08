@@ -40,8 +40,7 @@ module.exports = {
 			},
 			async handler(ctx) {
 				try {
-					const { username, email, password, userType} = ctx.params;
-
+					const { username, email, password, userType} = ctx.params; 
 					// Check if the email already exists
 					const existingEmail = await ctx.call("users.find", {
 						query: { email },
@@ -49,7 +48,6 @@ module.exports = {
 					if (existingEmail.length > 0) {
 						throw new MoleculerError("Email already exists", 400);
 					}
-
 					// Check if the username already exists
 					const existingUsername = await ctx.call("users.find", {
 						query: { username },
@@ -60,10 +58,8 @@ module.exports = {
 							400
 						);
 					}
-
 					// Hash the password
 					const hashedPassword = await bcrypt.hash(password, 10);
-
 					// Create the new user
 					const userRole = userType || 'user';
 					await ctx.call("users.create", {
@@ -72,13 +68,11 @@ module.exports = {
 						password: hashedPassword,
 						userType:userRole
 					});
-
 					// Fetch user data without password
 					const userDataWithoutPassword = await ctx.call(
 						"users.find",
 						{ query: { email }, fields: ["username", "email" ,"userType"] }
 					);
-
 					return {
 						message: "User registered successfully",
 						user: userDataWithoutPassword[0],
@@ -106,6 +100,7 @@ module.exports = {
 			async handler(ctx) {
 				try {
 					const { email, password } = ctx.params;
+					// const tokenExpiryTime = '1h'
 
 					// Find users by email
 					const users = await ctx.call("users.find", {
@@ -127,10 +122,11 @@ module.exports = {
 						throw new MoleculerError("Invalid credentials", 401);
 					}
 
-					// Generate a JWT token using the user's email as the payload
+					// Generate a JWT token using the user's id and useRole as the payload
 					const token = jwt.sign(
-						{ userId: validUser.email ,userRole: validUser.userType},
-						this.settings.JWT_SECRET
+						{ userId: validUser.id ,userRole: validUser.userType},
+						this.settings.JWT_SECRET,
+						// { expiresIn: tokenExpiryTime }
 					);
 
 					// Return a success message along with the generated token
@@ -167,15 +163,16 @@ module.exports = {
 						token,
 						this.settings.JWT_SECRET
 					);
+					console.log("decoded token", decodedToken);
 
 					// Verify if the token payload has the required information
 					if (!decodedToken.userId) {
 						throw new MoleculerError("Invalid token payload", 401);
 					}
 
-					// Assuming userId is email, change query accordingly if it differs
+					// Assuming userId is id, change query accordingly if it differs
 					const users = await ctx.call("users.find", {
-						query: { email: decodedToken.userId },
+						query: { id: decodedToken.userId },
 						fields: ["id", "username", "email","userType"],
 					});
 

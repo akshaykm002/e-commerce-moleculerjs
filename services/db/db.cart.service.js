@@ -3,43 +3,37 @@ const sequelize = require("./sequelize.js");
 const DbService = require("moleculer-db");
 const SequelizeAdapter = require("moleculer-db-adapter-sequelize");
 const { v4: uuidv4 } = require("uuid");
+const generateCartId = () => `c_${uuidv4()}`;
 
-const generateUserId = () => `u_${uuidv4()}`;
 
 module.exports = {
-	name: "users",
+	name: "cart",
 	mixins: [DbService],
 	adapter: new SequelizeAdapter(sequelize),
 	model: {
-		name: "db.user",
+		name: "cart",
 		define: {
 			id: {
 				type: DataTypes.STRING,
-				defaultValue: generateUserId,
+				defaultValue: generateCartId,
 				primaryKey: true,
 			},
-			username: {
-				type: DataTypes.STRING,
+			userId: {
+				type: DataTypes.INTEGER,
 				allowNull: false,
 			},
-			email: {
-				type: DataTypes.STRING,
-				allowNull: false,
-				unique: true,
-			},
-			password: {
-				type: DataTypes.STRING,
+			productId: {
+				type: DataTypes.INTEGER,
 				allowNull: false,
 			},
-			userType: {
-				type: DataTypes.STRING,
+			quantity: {
+				type: DataTypes.INTEGER,
 				allowNull: false,
-				defaultValue: "user",
 			},
 		},
 		options: {
 			timestamps: false,
-			tableName: "users",
+			tableName: "cart",
 		},
 	},
 	methods: {
@@ -52,9 +46,8 @@ module.exports = {
 			}
 		},
 	},
-
 	async started() {
-		this.logger.info("db.user service started");
+		this.logger.info("Cart service started");
 		await this.syncModels();
 	},
 };
