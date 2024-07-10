@@ -5,91 +5,94 @@ const authenticateToken = require("../../middlewares/auth.middleware.js");
 const path = require("path");
 
 module.exports = {
-    name: "api",
-    mixins: [ApiGateway, authenticateToken],
+	name: "api",
+	mixins: [ApiGateway, authenticateToken],
 
-    settings: {
-        port: process.env.PORT || 3000,
-        routes: [
-            {
-                use: [
-                    cors(),
-                    bodyParser.json(),
-                    bodyParser.urlencoded({ extended: true }),
-                ],
-                aliases: {
-                    // Users API
-                    "POST api/register": "user.register",
-                    "POST api/login": "user.login",
-                    "GET api/user": {
-                        action: "user.getUserByToken",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
-                    "POST api/logout": "user.logout",
+	settings: {
+		port: process.env.PORT || 3000,
+		routes: [
+			{
+				use: [
+					cors(),
+					bodyParser.json(),
+					bodyParser.urlencoded({ extended: true }),
+				],
+				aliases: {
+					// Users API
+					"POST api/register": "user.register",
+					"POST api/login": "user.login",
+					"GET api/user": {
+						action: "user.getUserByToken",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"POST api/logout": "user.logout",
 
-                    // Products API
-                    "GET api/products": "product.getAllProducts",
-                    "GET api/products/:id": "product.getProductById",
-                    "POST api/products": {
-                        action: "product.createNewProducts",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
-                    "PUT api/products/:id": {
-                        action: "product.updateProductById",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
+					// Products API
+					"GET api/products": "product.getAllProducts",
+					"GET api/products/:id": "product.getProductById",
+					"POST api/products": {
+						action: "product.createNewProducts",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"PUT api/products/:id": {
+						action: "product.updateProductById",
+						onBeforeCall: [authenticateToken.localAction],
+					},
 					"DELETE api/products/:id": {
-                        action: "product.deleteProductById",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
+						action: "product.deleteProductById",
+						onBeforeCall: [authenticateToken.localAction],
+					},
 
+					// Cart API
+					"GET api/cart": {
+						action: "cart.getCart",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"POST api/cart": {
+						action: "cart.addToCart",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"PUT api/cart/:id": {
+						action: "cart.updateCartItem",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"DELETE api/cart/:id": {
+						action: "cart.removeCartItem",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+				},
+				mappingPolicy: "all",
+				bodyParsers: {
+					json: true,
+					urlencoded: { extended: true },
+				},
+				onBeforeCall(ctx, route, req) {
+					ctx.meta.headers = req.headers;
+					ctx.meta.tenantId = req.headers["tenant-id"];
+					ctx.meta.$req = req;
+					ctx.meta.$res = req.res;
+				},
+			},
+			{
+				path: "/uploads",
+				use: [cors()],
+				aliases: {},
+				bodyParsers: {
+					json: false,
+					urlencoded: false,
+				},
+				onBeforeCall(ctx, route, req) {
+					ctx.meta.headers = req.headers;
+				},
+				folder: path.join(__dirname, "../../uploads"),
+			},
+		],
+	},
+	transporter: "NATS",
 
-                    // Cart API
-                    "GET api/cart": {
-                        action: "cart.getCart",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
-                    "POST api/cart": {
-                        action: "cart.addToCart",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
-					
+	methods: {},
 
-                },
-                mappingPolicy: "all",
-                bodyParsers: {
-                    json: true,
-                    urlencoded: { extended: true },
-                },
-                onBeforeCall(ctx, route, req) {
-                    ctx.meta.headers = req.headers;
-                    ctx.meta.tenantId = req.headers["tenant-id"];
-                    ctx.meta.$req = req; 
-                    ctx.meta.$res = req.res; 
-                },
-            },
-            {
-                path: "/uploads",
-                use: [
-                    cors()
-                ],
-                aliases: {},
-                bodyParsers: {
-                    json: false,
-                    urlencoded: false
-                },
-                onBeforeCall(ctx, route, req) {
-                    ctx.meta.headers = req.headers;
-                },
-                folder: path.join(__dirname, "../../uploads")
-            }
-        ],
-    },
-    transporter: "NATS",
-
-    methods: {},
-
-    started() {
-        this.logger.info("API service started");
-    },
+	started() {
+		this.logger.info("API service started");
+	},
 };
