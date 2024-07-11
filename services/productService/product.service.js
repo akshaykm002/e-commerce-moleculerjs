@@ -74,16 +74,8 @@ module.exports = {
 			},
 		},
 		createNewProducts: {
-			params: {
-				name: { type: "string", optional: false },
-				description: { type: "string", optional: false },
-				price: { type: "number", convert: true },
-				stock: { type: "number", convert: true },
-			},
 			async handler(ctx) {
 				try {
-					// console.log("Recieved params",ctx.params);
-
 					if (!ctx.meta.token) {
 						throw new MoleculerError(
 							"No token provided",
@@ -96,11 +88,8 @@ module.exports = {
 						ctx.meta.token,
 						this.settings.JWT_SECRET
 					);
-					console.log("Decoded Token:", decoded);
 
-					//destructured userRole from decoded token
 					const { userRole } = decoded;
-					console.log("User role:", userRole);
 
 					if (userRole !== "admin") {
 						throw new MoleculerError(
@@ -109,30 +98,26 @@ module.exports = {
 							"UNAUTHORIZED"
 						);
 					}
-					// console.log("upload ",upload);
 
+					// Process form data and file upload
 					await new Promise((resolve, reject) => {
-						upload.single("image")(
-							ctx.meta.$req,
-							ctx.meta.$res,
-							(err) => {
-								if (err) return reject(err);
-								resolve();
-							}
-						);
+						upload.single("image")(ctx.meta.$req, ctx.meta.$res, (err) => {
+							if (err) return reject(err);
+							resolve();
+						});
 					});
 
-					const { name, description, price, stock } = ctx.params;
+					const { name, description, price, stock } = ctx.meta.$req.body;
 
 					let imageUrl = ctx.meta.$req.file.path;
-					imageUrl = imageUrl.split(path.sep).join("/");     
+					imageUrl = `http://localhost/uploads/${path.basename(imageUrl)}`;
 
 					const product = await ctx.call("products.create", {
 						name,
 						description,
-						price,
+						price: parseFloat(price),
+						stock: parseInt(stock),
 						imageUrl,
-						stock,
 					});
 					return product;
 
@@ -148,84 +133,55 @@ module.exports = {
 			},
 		},
 		updateProductById: {
-			params: {
-				id: { type: "string"},
-				name: { type: "string", optional: true },
-				description: { type: "string", optional: true },
-				price: { type: "number", optional: true ,convert: true  },
-				stock: { type: "number", optional: true ,convert: true  },
-				imageUrl: { type: "string", optional: true },
-			},
-			async handler(ctx) {
-				try {
-					if (!ctx.meta.token) {
-						throw new MoleculerError(
-							"No token provided",
-							401,
-							"NO_TOKEN"
-						);
-					}
+            params: {
+                id: { type: "string" },
+            },
+            async handler(ctx) {
+                try {
+                    if (!ctx.meta.token) {
+                        throw new MoleculerError("No token provided", 401, "NO_TOKEN");
+                    }
 
-					const decoded = jwt.verify(
-						ctx.meta.token,
-						this.settings.JWT_SECRET
-					);
-					const { userRole } = decoded;
+                    const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
+                    const { userRole } = decoded;
 
-					if (userRole !== "admin") {
-						throw new MoleculerError(
-							"Unauthorized",
-							401,
-							"UNAUTHORIZED"
-						);
-					}
+                    if (userRole !== "admin") {
+                        throw new MoleculerError("Unauthorized", 401, "UNAUTHORIZED");
+                    }
 
-					await new Promise((resolve, reject) => {
-						upload.single("image")(
-							ctx.meta.$req,
-							ctx.meta.$res,
-							(err) => {
-								if (err) return reject(err);
-								resolve();
-							}
-						);
-					});
+                    await new Promise((resolve, reject) => {
+                        upload.single("image")(ctx.meta.$req, ctx.meta.$res, (err) => {
+                            if (err) return reject(err);
+                            resolve();
+                        });
+                    });
 
-					const updateData = {};
-					["name", "description", "price", "stock"].forEach((key) => {
-						if (ctx.params[key] !== undefined) {
-							updateData[key] = ctx.params[key];
-						}
-					});
+                    const updateData = {};
+                    ["name", "description", "price", "stock"].forEach((key) => {
+                        if (ctx.meta.$req.body[key] !== undefined) {
+                            updateData[key] = ctx.meta.$req.body[key];
+                        }
+                    });
 
-					if (ctx.meta.$req.file) {
+                    if (ctx.meta.$req.file) {
                         let imageUrl = ctx.meta.$req.file.path;
                         imageUrl = imageUrl.split(path.sep).join("/");
                         updateData.imageUrl = imageUrl;
                     }
 
-					const updatedProduct = await ctx.call("products.update", {
-						id: ctx.params.id,
-						...updateData,
-					});
-					if (!updatedProduct) {
-						throw new MoleculerError(
-							"Product not found",
-							404,
-							"NOT_FOUND"
-						);
-					}
-					return updatedProduct;
-				} catch (error) {
-					throw new MoleculerError(
-						"Unable to update product",
-						500,
-						"UPDATE_ERROR",
-						{ error }
-					);
-				}
-			},
-		},
+                    const updatedProduct = await ctx.call("products.update", {
+                        id: ctx.params.id,
+                        ...updateData,
+                    });
+                    if (!updatedProduct) {
+                        throw new MoleculerError("Product not found", 404, "NOT_FOUND");
+                    }
+                    return updatedProduct;
+                } catch (error) {
+                    throw new MoleculerError("Unable to update product", 500, "UPDATE_ERROR", { error });
+                }
+            },
+        },
 		deleteProductById: {
 			params: {
 				id: { type: "string"},

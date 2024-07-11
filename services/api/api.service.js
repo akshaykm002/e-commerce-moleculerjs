@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const authenticateToken = require("../../middlewares/auth.middleware.js");
 const path = require("path");
+const serveStatic = require("serve-static");
 
 module.exports = {
 	name: "api",
@@ -16,6 +17,7 @@ module.exports = {
 					cors(),
 					bodyParser.json(),
 					bodyParser.urlencoded({ extended: true }),
+					serveStatic(path.join(__dirname, "../../uploads")), 
 				],
 				aliases: {
 					// Users API
@@ -60,6 +62,15 @@ module.exports = {
 						action: "cart.removeCartItem",
 						onBeforeCall: [authenticateToken.localAction],
 					},
+                     // Orders API
+                     "POST api/orders": {
+                        action: "order.placeOrder",
+                        onBeforeCall: [authenticateToken.localAction],
+                    },
+                    "GET api/orders": {
+                        action: "order.getOrders",
+                        onBeforeCall: [authenticateToken.localAction],
+                    },
 				},
 				mappingPolicy: "all",
 				bodyParsers: {
@@ -73,20 +84,8 @@ module.exports = {
 					ctx.meta.$res = req.res;
 				},
 			},
-			{
-				path: "/uploads",
-				use: [cors()],
-				aliases: {},
-				bodyParsers: {
-					json: false,
-					urlencoded: false,
-				},
-				onBeforeCall(ctx, route, req) {
-					ctx.meta.headers = req.headers;
-				},
-				folder: path.join(__dirname, "../../uploads"),
-			},
 		],
+		
 	},
 	transporter: "NATS",
 
