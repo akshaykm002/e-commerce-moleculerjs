@@ -4,6 +4,7 @@ const { MoleculerError } = require("moleculer").Errors;
 const jwt = require("jsonwebtoken");
 const upload = require("../../middlewares/multer-config.js");
 
+
 module.exports = {
 	name: "product",
 
@@ -209,6 +210,69 @@ module.exports = {
 				}
 			},
 		},
+		searchProducts: {
+			params: {
+				query: { type: "string", optional: true },
+				priceMin: { type: "string", optional: true },
+				priceMax: { type: "string", optional: true },
+				sortBy: { type: "string", optional: true, values: ["name", "price"] },
+				sortOrder: { type: "string", optional: true, values: ["asc", "desc"] },
+			},
+			async handler(ctx) {
+				const { query, priceMin, priceMax, sortBy, sortOrder } = ctx.params;
+		
+				try {
+					// Fetching all products
+					let products = await ctx.call("products.find", {});
+		
+					// Applying filters
+					if (query) {
+						products = products.filter(product =>
+							product.name.toLowerCase().includes(query.toLowerCase()) ||
+							product.description.toLowerCase().includes(query.toLowerCase())
+						);
+					}
+		
+		
+					if (priceMin !== undefined) {
+						products = products.filter(product => parseFloat(product.price) >= parseFloat(priceMin));
+					}
+		
+					if (priceMax !== undefined) {
+						products = products.filter(product => parseFloat(product.price) <= parseFloat(priceMax));
+					}
+		
+					// Apply sorting
+					if (sortBy && sortOrder) {
+						products.sort((a, b) => {
+							const sortFieldA = a[sortBy];
+							const sortFieldB = b[sortBy];
+		
+							if (sortOrder === "asc") {
+								if (sortFieldA < sortFieldB) return -1;
+								if (sortFieldA > sortFieldB) return 1;
+								return 0;
+							} else {
+								if (sortFieldA > sortFieldB) return -1;
+								if (sortFieldA < sortFieldB) return 1;
+								return 0;
+							}
+						});
+					}
+		
+					return products;
+				} catch (error) {
+					throw new MoleculerError(
+						"Unable to search products",
+						500,
+						"SEARCH_ERROR",
+						{ error }
+					);
+				}
+			},
+		},
+		
+		
 	},
 	started() {
 		console.log("Product service started");

@@ -44,6 +44,7 @@ module.exports = {
 						action: "product.deleteProductById",
 						onBeforeCall: [authenticateToken.localAction],
 					},
+                    "GET api/products/search": "product.searchProducts",
 
 					// Cart API
 					"GET api/cart": {
