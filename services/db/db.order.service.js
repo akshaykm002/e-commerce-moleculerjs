@@ -32,6 +32,10 @@ module.exports = {
                 allowNull: false,
                 defaultValue: 'pending',
             },
+            paymentIntentId: {
+                type: DataTypes.STRING, 
+                allowNull: true, 
+            },
 		},
 		options: {
 			timestamps: true,

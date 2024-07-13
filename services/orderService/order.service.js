@@ -1,6 +1,7 @@
 const DbService = require("moleculer-db");
 const { MoleculerError } = require("moleculer").Errors;
 const jwt = require("jsonwebtoken");
+const stripe = require("../../config/stripe.js")
 
 module.exports = {
     name: "order",
@@ -52,25 +53,38 @@ module.exports = {
                         totalPrice += product.price * item.quantity;
                     }
 
-                    // Create the order
-                    const order = await ctx.call("orders.create", {
+                   
+
+                    // Payment processing with Stripe
+                    const paymentIntent = await stripe.paymentIntents.create({
+                        amount: Math.round(totalPrice * 100), // Stripe requires amount in cents
+                        currency: 'inr', // Set currency to Indian Rupee
+                        description: 'E-commerce purchase',
+                        payment_method_types: ['card']
+                    });
+                    
+                     // Create the order in your database
+                     const order = await ctx.call("orders.create", {
                         userId,
                         totalPrice,
-                        status: 'pending'
+                        status: 'pending',
+                        paymentIntentId: paymentIntent.id,
                     });
+                    console.log("Order created", order);
+
+                    // Optionally, you can store paymentIntent.id in your order record for future reference
 
                     // Clear user's cart after placing the order
                     for (const item of cartItems.cartItems) {
                         await ctx.call("cart.removeCartItem", { id: item.id });
                     }
 
-                    return { message: "Order placed successfully", order };
+                    return { message: "Order placed successfully", order, paymentIntent };
                 } catch (error) {
                     throw new MoleculerError("Unable to place order", 500, "PLACE_ORDER_ERROR", { error });
                 }
             },
         },
-
         getOrders: {
             async handler(ctx) {
                 try {
