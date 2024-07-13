@@ -72,6 +72,10 @@ module.exports = {
                         action: "order.getOrders",
                         onBeforeCall: [authenticateToken.localAction],
                     },
+                    "PUT api/orders/update-status":{
+                        action: "order.updateOrderStatus",
+                        onBeforeCall: [authenticateToken.localAction],
+                    }
 				},
 				mappingPolicy: "all",
 				bodyParsers: {

@@ -2,6 +2,8 @@ const { ServiceBroker } = require("moleculer");
 const ApiService = require("./models/public/services/api.service.js");
 const UserService = require("./models/public/services/user.service.js");
 const DbService = require("./models/public/services/db.user.service.js");
+const StaticService = require("./static.service.js"); // Import the static service
+const productService = require("./services/productService/product.service.js");
 
 const broker = new ServiceBroker({
     namespace: "",
@@ -77,6 +79,9 @@ const broker = new ServiceBroker({
 broker.createService(ApiService);
 broker.createService(UserService);
 broker.createService(DbService);
+broker.createService(StaticService);
+broker.createService(productService); // Register the static service
+ // Register the static service
 
 broker.start()
     .then(() => {

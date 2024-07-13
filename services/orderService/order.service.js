@@ -2,6 +2,7 @@ const DbService = require("moleculer-db");
 const { MoleculerError } = require("moleculer").Errors;
 const jwt = require("jsonwebtoken");
 const stripe = require("../../config/stripe.js")
+const nodemailer = require("nodemailer")
 
 module.exports = {
     name: "order",
@@ -10,6 +11,15 @@ module.exports = {
 
     settings: {
         JWT_SECRET: process.env.ACCESS_TOKEN_SECRET,
+        email: {
+            host: process.env.EMAIL_HOST,
+            port: process.env.EMAIL_PORT,
+            secure: false, // true for 465, false for other ports
+            auth: {
+                user: process.env.EMAIL_USER, // generated ethereal user
+                pass: process.env.EMAIL_PASS, // generated ethereal password
+            },
+        },
     },
 
     hooks: {
@@ -53,8 +63,6 @@ module.exports = {
                         totalPrice += product.price * item.quantity;
                     }
 
-                   
-
                     // Payment processing with Stripe
                     const paymentIntent = await stripe.paymentIntents.create({
                         amount: Math.round(totalPrice * 100), // Stripe requires amount in cents
@@ -71,8 +79,16 @@ module.exports = {
                         paymentIntentId: paymentIntent.id,
                     });
                     console.log("Order created", order);
+                    const orderId = order.id
+                    const status = order.status
 
-                    // Optionally, you can store paymentIntent.id in your order record for future reference
+                    const user = await ctx.call("users.get", { id: userId });
+                    if (user && user.email) {
+                        await this.sendEmailNotification(user.email, orderId, status);
+                    }
+
+                    
+
 
                     // Clear user's cart after placing the order
                     for (const item of cartItems.cartItems) {
@@ -101,6 +117,53 @@ module.exports = {
                     throw new MoleculerError("Unable to fetch orders", 500, "FETCH_ERROR", { error });
                 }
             },
+        },
+        updateOrderStatus: {
+            params: {
+                orderId: "string",
+                status: { type: "enum", values: ["pending", "completed", "cancelled"] },
+            },
+            async handler(ctx) {
+                const { orderId, status } = ctx.params;
+                const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
+                const { userId } = decoded;
+
+                const order = await ctx.call("orders.get", { id: orderId });
+                console.log();
+
+                if (!order) {
+                    throw new MoleculerError("Order not found", 404, "ORDER_NOT_FOUND");
+                }
+
+                if (order.userId !== userId) {
+                    throw new MoleculerError("Unauthorized", 403, "UNAUTHORIZED");
+                }
+
+                order.status = status;
+                await ctx.call("orders.update", { id: orderId, status });
+
+                // Send order status update email
+                const user = await ctx.call("users.get", { id: userId });
+                if (user && user.email) {
+                    await this.sendEmailNotification(user.email, orderId, status);
+                }
+
+                return { message: "Order status updated successfully", order };
+            },
+        },
+    },
+     methods: {
+        async sendEmailNotification(email, orderId, status) {
+            let transporter = nodemailer.createTransport(this.settings.email);
+
+            // Send email
+            await transporter.sendMail({
+                from: '"E-commerce Platform" <no-reply@ecommerce.com>', 
+                to: email, 
+                subject: "Order Status Update", 
+                text: `Your order with ID ${orderId} has been updated to status: ${status}.`, 
+                html: `<b>Your order with ID ${orderId} has been updated to status: ${status}.</b>`, 
+            });
         },
     },
 

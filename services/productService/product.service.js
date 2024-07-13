@@ -111,7 +111,7 @@ module.exports = {
 					const { name, description, price, stock } = ctx.meta.$req.body;
 
 					let imageUrl = ctx.meta.$req.file.path;
-					imageUrl = `http://localhost/uploads/${path.basename(imageUrl)}`;
+					imageUrl = `http://localhost:3000/uploads/${path.basename(imageUrl)}`;
 
 					const product = await ctx.call("products.create", {
 						name,
