@@ -2,7 +2,9 @@ const DbService = require("moleculer-db");
 const path = require('path');
 const { MoleculerError } = require("moleculer").Errors;
 const jwt = require("jsonwebtoken");
-const upload = require("../../middlewares/multer-config.js");
+const upload = require("../../config/multer-config.js");
+const cloudinary = require("../../config/cloudinary-config.js");
+
 
 
 module.exports = {
@@ -75,81 +77,32 @@ module.exports = {
 			},
 		},
 		createNewProducts: {
-			async handler(ctx) {
-				try {
-					if (!ctx.meta.token) {
-						throw new MoleculerError(
-							"No token provided",
-							401,
-							"NO_TOKEN"
-						);
-					}
-
-					const decoded = jwt.verify(
-						ctx.meta.token,
-						this.settings.JWT_SECRET
-					);
-
-					const { userRole } = decoded;
-
-					if (userRole !== "admin") {
-						throw new MoleculerError(
-							"Unauthorized",
-							401,
-							"UNAUTHORIZED"
-						);
-					}
-
-					// Process form data and file upload
-					await new Promise((resolve, reject) => {
-						upload.single("image")(ctx.meta.$req, ctx.meta.$res, (err) => {
-							if (err) return reject(err);
-							resolve();
-						});
-					});
-
-					const { name, description, price, stock } = ctx.meta.$req.body;
-
-					let imageUrl = ctx.meta.$req.file.path;
-					imageUrl = `http://localhost:3000/uploads/${path.basename(imageUrl)}`;
-
-					const product = await ctx.call("products.create", {
-						name,
-						description,
-						price: parseFloat(price),
-						stock: parseInt(stock),
-						imageUrl,
-					});
-					return product;
-
-				} catch (error) {
-					console.error("Error during product creation:", error);
-					throw new MoleculerError(
-						"Unable to create product",
-						500,
-						"CREATE_ERROR",
-						{ error }
-					);
-				}
-			},
-		},
-		updateProductById: {
-            params: {
-                id: { type: "string" },
-            },
             async handler(ctx) {
                 try {
                     if (!ctx.meta.token) {
-                        throw new MoleculerError("No token provided", 401, "NO_TOKEN");
+                        throw new MoleculerError(
+                            "No token provided",
+                            401,
+                            "NO_TOKEN"
+                        );
                     }
 
-                    const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
+                    const decoded = jwt.verify(
+                        ctx.meta.token,
+                        this.settings.JWT_SECRET
+                    );
+
                     const { userRole } = decoded;
 
                     if (userRole !== "admin") {
-                        throw new MoleculerError("Unauthorized", 401, "UNAUTHORIZED");
+                        throw new MoleculerError(
+                            "Unauthorized",
+                            401,
+                            "UNAUTHORIZED"
+                        );
                     }
 
+                    // Process form data and file upload
                     await new Promise((resolve, reject) => {
                         upload.single("image")(ctx.meta.$req, ctx.meta.$res, (err) => {
                             if (err) return reject(err);
@@ -157,32 +110,90 @@ module.exports = {
                         });
                     });
 
-                    const updateData = {};
-                    ["name", "description", "price", "stock"].forEach((key) => {
-                        if (ctx.meta.$req.body[key] !== undefined) {
-                            updateData[key] = ctx.meta.$req.body[key];
-                        }
-                    });
+                    const { name, description, price, stock } = ctx.meta.$req.body;
 
-                    if (ctx.meta.$req.file) {
-                        let imageUrl = ctx.meta.$req.file.path;
-                        imageUrl = imageUrl.split(path.sep).join("/");
-                        updateData.imageUrl = imageUrl;
-                    }
+                    const result = await cloudinary.uploader.upload(ctx.meta.$req.file.path);
 
-                    const updatedProduct = await ctx.call("products.update", {
-                        id: ctx.params.id,
-                        ...updateData,
+                    const imageUrl = result.secure_url;
+
+                    const product = await ctx.call("products.create", {
+                        name,
+                        description,
+                        price: parseFloat(price),
+                        stock: parseInt(stock),
+                        imageUrl,
                     });
-                    if (!updatedProduct) {
-                        throw new MoleculerError("Product not found", 404, "NOT_FOUND");
-                    }
-                    return updatedProduct;
+                    return product;
+
                 } catch (error) {
-                    throw new MoleculerError("Unable to update product", 500, "UPDATE_ERROR", { error });
+                    console.error("Error during product creation:", error);
+                    throw new MoleculerError(
+                        "Unable to create product",
+                        500,
+                        "CREATE_ERROR",
+                        { error }
+                    );
                 }
             },
         },
+    
+		updateProductById: {
+			params: {
+				id: { type: "string" },
+			},
+			async handler(ctx) {
+				try {
+					if (!ctx.meta.token) {
+						throw new MoleculerError("No token provided", 401, "NO_TOKEN");
+					}
+		
+					const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
+					const { userRole } = decoded;
+		
+					if (userRole !== "admin") {
+						throw new MoleculerError("Unauthorized", 401, "UNAUTHORIZED");
+					}
+		
+					await new Promise((resolve, reject) => {
+						upload.single("image")(ctx.meta.$req, ctx.meta.$res, (err) => {
+							if (err) return reject(err);
+							resolve();
+						});
+					});
+		
+					const updateData = {};
+					["name", "description", "price", "stock"].forEach((key) => {
+						if (ctx.meta.$req.body[key] !== undefined) {
+							updateData[key] = ctx.meta.$req.body[key];
+						}
+					});
+		
+					if (ctx.meta.$req.file) {
+						const filePath = ctx.meta.$req.file.path;
+		
+						const result = await cloudinary.uploader.upload(filePath, {
+							folder: "uploads", // You can specify the folder name in Cloudinary where the image will be stored
+						});
+		
+						updateData.imageUrl = result.secure_url;
+					}
+		
+					const updatedProduct = await ctx.call("products.update", {
+						id: ctx.params.id,
+						...updateData,
+					});
+		
+					if (!updatedProduct) {
+						throw new MoleculerError("Product not found", 404, "NOT_FOUND");
+					}
+		
+					return updatedProduct;
+				} catch (error) {
+					throw new MoleculerError("Unable to update product", 500, "UPDATE_ERROR", { error });
+				}
+			},
+		},
+		
 		deleteProductById: {
 			params: {
 				id: { type: "string"},

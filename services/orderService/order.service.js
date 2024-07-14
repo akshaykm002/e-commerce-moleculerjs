@@ -14,10 +14,10 @@ module.exports = {
         email: {
             host: process.env.EMAIL_HOST,
             port: process.env.EMAIL_PORT,
-            secure: false, // true for 465, false for other ports
+            secure: false, 
             auth: {
-                user: process.env.EMAIL_USER, // generated ethereal user
-                pass: process.env.EMAIL_PASS, // generated ethereal password
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS, 
             },
         },
     },
@@ -65,8 +65,8 @@ module.exports = {
 
                     // Payment processing with Stripe
                     const paymentIntent = await stripe.paymentIntents.create({
-                        amount: Math.round(totalPrice * 100), // Stripe requires amount in cents
-                        currency: 'inr', // Set currency to Indian Rupee
+                        amount: Math.round(totalPrice * 100), 
+                        currency: 'inr', 
                         description: 'E-commerce purchase',
                         payment_method_types: ['card']
                     });
@@ -79,16 +79,15 @@ module.exports = {
                         paymentIntentId: paymentIntent.id,
                     });
                     console.log("Order created", order);
+
                     const orderId = order.id
                     const status = order.status
+                    //Use the current order status and send it to the user with email
 
                     const user = await ctx.call("users.get", { id: userId });
                     if (user && user.email) {
                         await this.sendEmailNotification(user.email, orderId, status);
                     }
-
-                    
-
 
                     // Clear user's cart after placing the order
                     for (const item of cartItems.cartItems) {
@@ -142,7 +141,7 @@ module.exports = {
                 order.status = status;
                 await ctx.call("orders.update", { id: orderId, status });
 
-                // Send order status update email
+                // Send order status update through email
                 const user = await ctx.call("users.get", { id: userId });
                 if (user && user.email) {
                     await this.sendEmailNotification(user.email, orderId, status);
@@ -153,16 +152,16 @@ module.exports = {
         },
     },
      methods: {
+        //Nodemailer for sending email notifications
         async sendEmailNotification(email, orderId, status) {
             let transporter = nodemailer.createTransport(this.settings.email);
 
-            // Send email
             await transporter.sendMail({
                 from: '"E-commerce Platform" <no-reply@ecommerce.com>', 
                 to: email, 
                 subject: "Order Status Update", 
-                text: `Your order with ID ${orderId} has been updated to status: ${status}.`, 
-                html: `<b>Your order with ID ${orderId} has been updated to status: ${status}.</b>`, 
+                text: `Your order with ID ${orderId} is now ${status}.`, 
+                html: `<b>Your order with ID ${orderId} is now ${status}.</b>`, 
             });
         },
     },

@@ -10,7 +10,7 @@ module.exports = {
 	mixins: [DbService],
 
 	settings: {
-		JWT_SECRET: process.env.ACCESS_TOKEN_SECRET,
+		JWT_SECRET: process.env.ACCESS_TOKEN_SECRET,	
 	},
 
 	hooks: {
@@ -94,13 +94,12 @@ module.exports = {
 		},
 		login: {
 			params: {
-				email: { type: "email" }, // Validate email format
-				password: { type: "string", min: 6 }, // Ensure password has a minimum length of 6 characters
+				email: { type: "email" }, 
+				password: { type: "string", min: 6 }, 
 			},
 			async handler(ctx) {
 				try {
 					const { email, password } = ctx.params;
-					// const tokenExpiryTime = '1h'
 
 					// Find users by email
 					const users = await ctx.call("users.find", {
@@ -137,10 +136,8 @@ module.exports = {
 						throw error;
 					}
 
-					// Log any unexpected errors for debugging purposes
 					console.error("Error during login:", error);
-
-					// Throw a generic login failed error with a 500 status code
+					
 					throw new MoleculerError(
 						"Login failed",
 						500,
@@ -170,7 +167,6 @@ module.exports = {
 						throw new MoleculerError("Invalid token payload", 401);
 					}
 
-					// Assuming userId is id, change query accordingly if it differs
 					const users = await ctx.call("users.find", {
 						query: { id: decodedToken.userId },
 						fields: ["id", "username", "email","userType"],
