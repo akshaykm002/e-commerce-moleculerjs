@@ -10,6 +10,7 @@ module.exports = {
     settings: {
         JWT_SECRET: process.env.ACCESS_TOKEN_SECRET, 
     },
+    //Hook to extract JWT token from the request headers before every action
     hooks: {
         before: {
             "*": [
@@ -51,7 +52,7 @@ module.exports = {
                         } catch (error) {
                             // Handle case where product does not exist
                             if (error.code === 404) {
-                                // Optionally, you could also remove the cart item from the database
+                                
                                 await ctx.call("db.cart.remove", { id: item.id });
                             } else {
                                 throw error;

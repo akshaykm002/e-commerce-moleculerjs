@@ -38,6 +38,10 @@ module.exports = {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 			},
+			reviews: {
+				type: DataTypes.JSONB,
+				allowNull:true 
+			},
 		},
 		options: {
 			timestamps: false,

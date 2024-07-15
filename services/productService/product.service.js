@@ -160,7 +160,8 @@ module.exports = {
 							resolve();
 						});
 					});
-		
+					
+					//construct a new object to store the updated data and use forEacg loop to update data based on key
 					const updateData = {};
 					["name", "description", "price", "stock"].forEach((key) => {
 						if (ctx.meta.$req.body[key] !== undefined) {
@@ -172,7 +173,7 @@ module.exports = {
 						const filePath = ctx.meta.$req.file.path;
 		
 						const result = await cloudinary.uploader.upload(filePath, {
-							folder: "uploads", // You can specify the folder name in Cloudinary where the image will be stored
+							folder: "uploads", 
 						});
 		
 						updateData.imageUrl = result.secure_url;
@@ -282,8 +283,115 @@ module.exports = {
 				}
 			},
 		},
-		
-		
+		addReview: {
+			params: {
+			  productId: { type: "string" },
+			  rating: { type: "number", min: 1, max: 5 },
+			  comment: { type: "string", optional: true },
+			},
+			async handler(ctx) {
+			  try {
+				if (!ctx.meta.token) {
+				  throw new MoleculerError("No token provided", 401, "NO_TOKEN");
+				}
+		  
+				const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
+				const { userId } = decoded;
+				const { productId, rating, comment } = ctx.params;
+		  
+				// Fetch user orders
+				const userOrders = await ctx.call("orders.find", { query: { userId } });
+		  
+				// Check if userOrders is defined and not empty
+				if (!userOrders || userOrders.length === 0) {
+				  throw new MoleculerError("User has not purchased any products", 403, "NOT_PURCHASED");
+				}
+		  
+				// Fetch the product
+				const product = await ctx.call("products.get", { id: productId });
+		  
+				if (!product) {
+				  throw new MoleculerError("Product not found", 404, "NOT_FOUND");
+				}
+		  
+				// Prepare review object
+				const review = {
+				  userId,
+				  rating,
+				  comment,
+				  createdAt: new Date(),
+				};
+		  
+				// Add review to product reviews array
+				product.reviews = product.reviews || [];
+				product.reviews.push(review);
+		  
+				// Update the product with the new review
+				const updatedProduct = await ctx.call("products.update", {
+				  id: productId,
+				  reviews: product.reviews,
+				});
+		  
+				const { rating: reviewRating, userId: reviewUserId, createdAt: reviewCreatedAt } = review;
+		  
+				return {
+				  message: "Review added successfully",
+				  review: {
+					rating: reviewRating,
+					userId: reviewUserId,
+					comment: comment || "", 
+					createdAt: reviewCreatedAt,
+				  },
+				  updatedProduct,
+				};
+			  } catch (error) {
+				throw new MoleculerError("Unable to add review", 500, "ADD_REVIEW_ERROR", { error });
+			  }
+			},
+		  },
+		  
+		    
+	  
+		  getReviews: {
+			params: {
+			  id: { type: "string" }
+			},
+			async handler(ctx) {
+			  try {
+				const { id } = ctx.params;
+		  
+				// Fetch the product to get its reviews
+				const product = await ctx.call("products.get", { id });
+		  
+				if (!product) {
+				  throw new MoleculerError("Product not found", 404, "NOT_FOUND");
+				}
+		  
+				// Fetch user information for each review's userId
+				const reviewsWithDetails = await Promise.all(product.reviews.map(async review => {
+				  const user = await ctx.call("users.get", { id: review.userId });
+				  return {
+					rating: review.rating,
+					userId: review.userId,
+					username: user.username,  
+					comment: review.comment || "", 
+					createdAt: review.createdAt
+				  };
+				}));
+		  
+				// Return the reviews with details
+				return {
+				  message: `Reviews for product with ID ${id}`,
+				  reviews: reviewsWithDetails
+				};
+			  } catch (error) {
+				throw new MoleculerError("Unable to fetch reviews", 500, "FETCH_REVIEWS_ERROR", { error });
+			  }
+			},
+		  },
+		  
+				
+			
 	},
 	started() {
 		console.log("Product service started");

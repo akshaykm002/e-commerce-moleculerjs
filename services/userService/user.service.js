@@ -48,16 +48,7 @@ module.exports = {
 					if (existingEmail.length > 0) {
 						throw new MoleculerError("Email already exists", 400);
 					}
-					// Check if the username already exists
-					const existingUsername = await ctx.call("users.find", {
-						query: { username },
-					});
-					if (existingUsername.length > 0) {
-						throw new MoleculerError(
-							"Username already exists",
-							400
-						);
-					}
+				
 					// Hash the password
 					const hashedPassword = await bcrypt.hash(password, 10);
 					// Create the new user
@@ -128,7 +119,7 @@ module.exports = {
 						// { expiresIn: tokenExpiryTime }
 					);
 
-					// Return a success message along with the generated token
+					
 					return { message: "User logged in successfully", token };
 				} catch (error) {
 					// Check if the error is an instance of MoleculerError

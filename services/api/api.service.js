@@ -45,6 +45,11 @@ module.exports = {
 						onBeforeCall: [authenticateToken.localAction],
 					},
                     "GET api/products/search": "product.searchProducts",
+                    "POST api/products/review": {
+                        action: "product.addReview",
+                        onBeforeCall: [authenticateToken.localAction],
+                    },
+                    "GET api/products/review/:id": "product.getReviews",
 
 					// Cart API
 					"GET api/cart": {
@@ -72,10 +77,7 @@ module.exports = {
                         action: "order.getOrders",
                         onBeforeCall: [authenticateToken.localAction],
                     },
-                    "PUT api/orders/update-status":{
-                        action: "order.updateOrderStatus",
-                        onBeforeCall: [authenticateToken.localAction],
-                    }
+                    
 				},
 				mappingPolicy: "all",
 				bodyParsers: {

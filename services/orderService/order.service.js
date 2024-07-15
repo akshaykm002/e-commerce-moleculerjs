@@ -117,39 +117,7 @@ module.exports = {
                 }
             },
         },
-        updateOrderStatus: {
-            params: {
-                orderId: "string",
-                status: { type: "enum", values: ["pending", "completed", "cancelled"] },
-            },
-            async handler(ctx) {
-                const { orderId, status } = ctx.params;
-                const decoded = jwt.verify(ctx.meta.token, this.settings.JWT_SECRET);
-                const { userId } = decoded;
-
-                const order = await ctx.call("orders.get", { id: orderId });
-                console.log();
-
-                if (!order) {
-                    throw new MoleculerError("Order not found", 404, "ORDER_NOT_FOUND");
-                }
-
-                if (order.userId !== userId) {
-                    throw new MoleculerError("Unauthorized", 403, "UNAUTHORIZED");
-                }
-
-                order.status = status;
-                await ctx.call("orders.update", { id: orderId, status });
-
-                // Send order status update through email
-                const user = await ctx.call("users.get", { id: userId });
-                if (user && user.email) {
-                    await this.sendEmailNotification(user.email, orderId, status);
-                }
-
-                return { message: "Order status updated successfully", order };
-            },
-        },
+        
     },
      methods: {
         //Nodemailer for sending email notifications
