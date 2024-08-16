@@ -4,13 +4,16 @@ const cors = require("cors");
 const authenticateToken = require("../../middlewares/auth.middleware.js");
 const path = require("path");
 const serveStatic = require("serve-static");
+const dotenv = require('dotenv')
+require('dotenv').config();
+
 
 module.exports = {
 	name: "api",
 	mixins: [ApiGateway, authenticateToken],
 
 	settings: {
-		port: process.env.PORT || 3000,
+		port: process.env.PORT || 4000,
 		routes: [
 			{
 				use: [
