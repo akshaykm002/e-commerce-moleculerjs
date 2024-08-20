@@ -3,7 +3,7 @@ const bodyParser = require("body-parser");
 const authenticateToken = require("../../middlewares/auth.middleware.js");
 const path = require("path");
 const serveStatic = require("serve-static");
-require('dotenv').config();
+require("dotenv").config();
 
 module.exports = {
 	name: "api",
@@ -16,15 +16,18 @@ module.exports = {
 				use: [
 					bodyParser.json(),
 					bodyParser.urlencoded({ extended: true }),
-					serveStatic(path.join(__dirname, "../../uploads")), 
+					serveStatic(path.join(__dirname, "../../uploads")),
 				],
 				// CORS Configuration
 				cors: {
-					origin: ["http://localhost:3000", "https://akshaykm002.github.io/e-commerce-react/"], 
-					methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
-					allowedHeaders: ["Content-Type", "Authorization"], 
-					credentials: true, 
-					maxAge: 3600 
+					origin: [
+						"http://localhost:3000",
+						"https://akshaykm002.github.io/e-commerce-react/",
+					],
+					methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+					allowedHeaders: ["Content-Type", "Authorization"],
+					credentials: true,
+					maxAge: 3600,
 				},
 				aliases: {
 					// Users API
@@ -51,12 +54,12 @@ module.exports = {
 						action: "product.deleteProductById",
 						onBeforeCall: [authenticateToken.localAction],
 					},
-                    "GET api/products/search": "product.searchProducts",
-                    "POST api/products/review": {
-                        action: "product.addReview",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
-                    "GET api/products/review/:id": "product.getReviews",
+					"GET api/products/search": "product.searchProducts",
+					"POST api/products/review": {
+						action: "product.addReview",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"GET api/products/review/:id": "product.getReviews",
 
 					// Cart API
 					"GET api/cart": {
@@ -76,15 +79,20 @@ module.exports = {
 						onBeforeCall: [authenticateToken.localAction],
 					},
 
-                     // Orders API
-                     "POST api/orders": {
-                        action: "order.placeOrder",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
-                    "GET api/orders": {
-                        action: "order.getOrders",
-                        onBeforeCall: [authenticateToken.localAction],
-                    },
+					// Orders API
+					"POST api/orders": {
+						action: "order.placeOrder",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"GET api/orders": {
+						action: "order.getOrders",
+						onBeforeCall: [authenticateToken.localAction],
+					},
+					"GET api/health": {
+						handler(req, res) {
+							res.end("API is up and running");
+						},
+					},
 				},
 				mappingPolicy: "all",
 				bodyParsers: {
@@ -99,7 +107,6 @@ module.exports = {
 				},
 			},
 		],
-		
 	},
 	transporter: "NATS",
 
