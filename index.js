@@ -1,12 +1,12 @@
 const { ServiceBroker } = require("moleculer");
 const apiService = require("./services/api/api.service.js");
-const UserService = require("./models/public/services/user.service.js");
+const UserService = require("./services/userService/user.service.js");
 const productService = require("./services/productService/product.service.js");
 const cartService = require("./services/cartService/cart.service.js");
 const orderService = require("./services/orderService/order.service.js");
 
 
-const DbService = require("./models/public/services/db.user.service.js");
+const DbService = require("./services/db/db.product.service.js");
 const dbProductService = require("./services/db/product.service.js");
 const dbCartService = require("./services/db/db.cart.service.js");
 const dbOrderService = require("./services/db/db.order.service.js");
