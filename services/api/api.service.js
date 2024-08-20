@@ -1,12 +1,9 @@
 const ApiGateway = require("moleculer-web");
 const bodyParser = require("body-parser");
-const cors = require("cors");
 const authenticateToken = require("../../middlewares/auth.middleware.js");
 const path = require("path");
 const serveStatic = require("serve-static");
-const dotenv = require('dotenv')
 require('dotenv').config();
-
 
 module.exports = {
 	name: "api",
@@ -17,11 +14,18 @@ module.exports = {
 		routes: [
 			{
 				use: [
-					cors(),
 					bodyParser.json(),
 					bodyParser.urlencoded({ extended: true }),
 					serveStatic(path.join(__dirname, "../../uploads")), 
 				],
+				// CORS Configuration
+				cors: {
+					origin: ["http://localhost:3000", "https://akshaykm002.github.io/e-commerce-react/"], 
+					methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
+					allowedHeaders: ["Content-Type", "Authorization"], 
+					credentials: true, 
+					maxAge: 3600 
+				},
 				aliases: {
 					// Users API
 					"POST api/register": "user.register",
@@ -71,6 +75,7 @@ module.exports = {
 						action: "cart.removeCartItem",
 						onBeforeCall: [authenticateToken.localAction],
 					},
+
                      // Orders API
                      "POST api/orders": {
                         action: "order.placeOrder",
@@ -80,7 +85,6 @@ module.exports = {
                         action: "order.getOrders",
                         onBeforeCall: [authenticateToken.localAction],
                     },
-                    
 				},
 				mappingPolicy: "all",
 				bodyParsers: {
@@ -105,4 +109,3 @@ module.exports = {
 		this.logger.info("API service started");
 	},
 };
- 
