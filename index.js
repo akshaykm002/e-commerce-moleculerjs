@@ -1,9 +1,18 @@
 const { ServiceBroker } = require("moleculer");
-const ApiService = require("./models/public/services/api.service.js");
+const apiService = require("./services/api/api.service.js");
 const UserService = require("./models/public/services/user.service.js");
-const DbService = require("./models/public/services/db.user.service.js");
-const StaticService = require("./static.service.js"); // Import the static service
 const productService = require("./services/productService/product.service.js");
+const cartService = require("./services/cartService/cart.service.js");
+const orderService = require("./services/orderService/order.service.js");
+
+
+const DbService = require("./models/public/services/db.user.service.js");
+const dbProductService = require("./services/db/product.service.js");
+const dbCartService = require("./services/db/db.cart.service.js");
+const dbOrderService = require("./services/db/db.order.service.js");
+
+const StaticService = require("./static.service.js"); 
+
 
 const broker = new ServiceBroker({
     namespace: "",
@@ -76,12 +85,19 @@ const broker = new ServiceBroker({
 });
 
 // Register services
-broker.createService(ApiService);
+broker.createService(apiService);
 broker.createService(UserService);
+broker.createService(productService);
+broker.createService(cartService);
+broker.createService(orderService);
+
+
+broker.createService(dbCartService);
+broker.createService(dbOrderService);
+broker.createService(dbProductService);
 broker.createService(DbService);
+
 broker.createService(StaticService);
-broker.createService(productService); // Register the static service
- // Register the static service
 
 broker.start()
     .then(() => {
