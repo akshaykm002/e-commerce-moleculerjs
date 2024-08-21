@@ -14,7 +14,7 @@ RUN npm install --production
 COPY . .
 
 # Expose the port your Moleculer service uses (3000 in this case)
-EXPOSE 3000
+EXPOSE 4000
 
 # Start the application
 CMD ["npm", "run", "start"]
