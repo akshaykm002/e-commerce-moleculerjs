@@ -7,6 +7,8 @@ services:
   moleculer:
     build: .
     environment:
-      - NATS_URL=nats://nats:4222
+      - TRANSPORTER=nats://nats:4222
     depends_on:
       - nats
+    ports:
+      - "3000:3000"
